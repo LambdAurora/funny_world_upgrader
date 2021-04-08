@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "dev.lambdaurora.funny_world_upgrader.mixin",
+  "compatibilityLevel": "JAVA_15",
+  "mixins": [
+    "BiomeArrayAccessor",
+    "ChunkSerializerMixin",
+    "LevelSummaryMixin",
+    "VersionedChunkStorageMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

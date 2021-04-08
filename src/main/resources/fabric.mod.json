@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "funny_world_upgrader",
+  "version": "${version}",
+  "name": "Funny World Upgrader",
+  "description": "Convert worlds from before 21w06a to new world format.",
+  "authors": [
+    "LambdAurora"
+  ],
+  "contact": {
+    "sources": "https://github.com/LambdAurora/funny_world_upgrader.git",
+    "issues": "https://github.com/LambdAurora/funny_world_upgrader/issues"
+  },
+  "license": "LGPLv3",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.lambdaurora.funny_world_upgrader.FunnyWorldUpgrader"
+    ]
+  },
+  "mixins": [
+    "funny_world_upgrader.mixins.json"
+  ],
+  "depends": {
+    "minecraft": ">=1.17-alpha.21.14.a",
+    "fabricloader": ">=0.11.1"
+  }
+}
