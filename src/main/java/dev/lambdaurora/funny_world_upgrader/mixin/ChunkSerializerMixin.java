@@ -43,7 +43,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
-import static dev.lambdaurora.funny_world_upgrader.FunnyWorldUpgrader.HORIZONTAL_SECTION_COUNT;
+import static dev.lambdaurora.funny_world_upgrader.FunnyWorldUpgrader.*;
 
 @Mixin(ChunkSerializer.class)
 public abstract class ChunkSerializerMixin {
@@ -62,12 +62,14 @@ public abstract class ChunkSerializerMixin {
                                      boolean hasSkyLight, ChunkManager chunkManager, LightingProvider lightingProvider) {
         int dataVersion = FunnyWorldUpgrader.DATA_VERSION_THREAD_LOCAL.get();
 
-        if (dataVersion > 2692 || world.getDimension() != world.getRegistryManager().get(Registry.DIMENSION_TYPE_KEY).get(DimensionType.OVERWORLD_ID))
+        if (dataVersion > 2692
+                || world.getDimension() != world.getRegistryManager().get(Registry.DIMENSION_TYPE_KEY).get(DimensionType.OVERWORLD_ID))
             // New Chunk with proper format or non-overworld.
             return;
 
         // BiomeArray upgrade (warning: this is bad)
-        var oldBiomeArray = new BiomeArray(world.getRegistryManager().get(Registry.BIOME_KEY), OldOverworldHeightLimitView.SELF, pos, biomeSource,
+        var oldBiomeArray = new BiomeArray(world.getRegistryManager().get(Registry.BIOME_KEY),
+                OldOverworldHeightLimitView.SELF, pos, biomeSource,
                 levelNbt.contains("Biomes", 11) ? levelNbt.getIntArray("Biomes") : null);
         for (int x = 0; x < 4; x++) {
             for (int z = 0; z < 4; z++) {
@@ -79,12 +81,13 @@ public abstract class ChunkSerializerMixin {
                         oldY = 63;
                     }
                     var old = oldBiomeArray.getBiomeForNoiseGen(x * 4, oldY * 4, z * 4);
-                    ((BiomeArrayAccessor) biomeArray).getData()[y << HORIZONTAL_SECTION_COUNT * 2 | z << HORIZONTAL_SECTION_COUNT | x] = old;
+                    var i = y << HORIZONTAL_SECTION_COUNT * 2 | z << HORIZONTAL_SECTION_COUNT | x;
+                    ((BiomeArrayAccessor) biomeArray).getData()[i] = old;
                 }
             }
         }
 
-        if (ChunkSerializer.getChunkType(nbt) == ChunkStatus.ChunkType.LEVELCHUNK) {
+        if (!DROP_PROTO_CHUNKS || ChunkSerializer.getChunkType(nbt) == ChunkStatus.ChunkType.LEVELCHUNK) {
             for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
                 int sectionY = world.sectionIndexToCoord(sectionIndex);
                 if (sections[sectionIndex] == null) {
@@ -140,8 +143,15 @@ public abstract class ChunkSerializerMixin {
             }
         }
 
-        if (ChunkSerializer.getChunkType(nbt) == ChunkStatus.ChunkType.PROTOCHUNK) {
-            // @TODO proper proto chunk fixing
+        tryFixNbtSections(levelNbt, "PostProcessing", world);
+
+        if (!DROP_PROTO_CHUNKS) {
+            tryFixNbtSections(levelNbt, "Lights", world);
+            tryFixNbtSections(levelNbt, "LiquidsToBeTicked", world);
+            tryFixNbtSections(levelNbt, "ToBeTicked", world);
+        }
+
+        if (DROP_PROTO_CHUNKS && ChunkSerializer.getChunkType(nbt) == ChunkStatus.ChunkType.PROTOCHUNK) {
             cir.setReturnValue(new ProtoChunk(pos, UpgradeData.NO_UPGRADE_DATA, world));
         }
     }

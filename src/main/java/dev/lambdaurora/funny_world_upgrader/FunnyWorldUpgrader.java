@@ -17,11 +17,13 @@
 
 package dev.lambdaurora.funny_world_upgrader;
 
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import net.fabricmc.api.ModInitializer;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.HeightLimitView;
 
 /**
  * Represents the Funny World Upgrader mod.
@@ -31,10 +33,8 @@ import net.minecraft.util.math.MathHelper;
  * @since 1.0.0
  */
 public class FunnyWorldUpgrader implements ModInitializer {
-    public static final String NAMESPACE = "funny_world_upgrader";
-
     public static final int HORIZONTAL_SECTION_COUNT = MathHelper.log2DeBruijn(16) - 2;
-    public static final int HORIZONTAL_BIT_MASK = (1 << HORIZONTAL_SECTION_COUNT) - 1;
+    public static final boolean DROP_PROTO_CHUNKS = Boolean.getBoolean("drop-proto-chunks");
 
     public static final ThreadLocal<Integer> DATA_VERSION_THREAD_LOCAL = new ThreadLocal<>();
 
@@ -43,7 +43,31 @@ public class FunnyWorldUpgrader implements ModInitializer {
         System.out.println("Trans rights are human rights.");
     }
 
-    public static Identifier id(String path) {
-        return new Identifier(NAMESPACE, path);
+    /**
+     * Attempts to converts old sections to new sections with shifting.
+     *
+     * @param level the level NBT
+     * @param key the key to the list of sections
+     * @param view height limit view to get the expected vertical sections
+     */
+    public static void tryFixNbtSections(NbtCompound level, String key, HeightLimitView view) {
+        if (level.contains("Lights", NbtElement.LIST_TYPE)) {
+            fixNbtSections(level.getList(key, NbtElement.LIST_TYPE), view);
+        }
+    }
+
+    /**
+     * Attempts to converts old sections to new sections with shifting.
+     *
+     * @param list the list to fix
+     * @param view height limit view to get the expected vertical sections
+     */
+    public static void fixNbtSections(NbtList list, HeightLimitView view) {
+        if (list.size() != view.countVerticalSections()) {
+            for (int i = 0; i < 4; i++)
+                list.add(0, new NbtList());
+            for (int i = 0; i < 4; i++)
+                list.add(new NbtList());
+        }
     }
 }
