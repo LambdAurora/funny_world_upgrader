@@ -23,10 +23,13 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.StructureManager;
+import net.minecraft.util.collection.PackedIntegerArray;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.ChunkSerializer;
 import net.minecraft.world.ChunkTickScheduler;
@@ -141,6 +144,23 @@ public abstract class ChunkSerializerMixin {
                     }
                 }
             }
+        }
+
+        if (levelNbt.contains("Heightmaps", NbtElement.COMPOUND_TYPE)) {
+            var heightmaps = levelNbt.getCompound("Heightmaps");
+
+            heightmaps.getKeys().forEach(key -> {
+                var heightmapData = heightmaps.getLongArray(key);
+                var oldElementBits = MathHelper.log2DeBruijn(256);
+                var oldArray = new PackedIntegerArray(oldElementBits, 256);
+                System.arraycopy(heightmapData, 0, oldArray.getStorage(), 0, heightmapData.length);
+                var newElementBits = MathHelper.log2DeBruijn(world.getHeight() + 1);
+                var newArray = new PackedIntegerArray(newElementBits, 256);
+                for (int i = 0; i < 256; i++) {
+                    newArray.set(i, oldArray.get(i) - world.getBottomY());
+                }
+                heightmaps.putLongArray(key, newArray.getStorage());
+            });
         }
 
         tryFixNbtSections(levelNbt, "PostProcessing", world);
