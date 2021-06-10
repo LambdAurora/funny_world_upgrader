@@ -100,7 +100,7 @@ public class FunnyWorldUpgrader implements ModInitializer {
 
         // Was generated while there was the datapack for sure
         // Means the biomes array was null if it got here and this condition is true.
-        if (dataVersion > 2692 && dataVersion <= 2706)
+        if (dataVersion > 2692)
             return true;
 
         // BiomeArray upgrade (warning: this is bad)
