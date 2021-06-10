@@ -87,17 +87,26 @@ public class FunnyWorldUpgrader implements ModInitializer {
                                      BiomeSource biomeSource,
                                      NbtCompound levelNbt, BiomeArray biomeArray,
                                      ChunkSection[] sections) {
+        // We don't touch non-overworld dimensions
+        if (world.getDimension() != world.getRegistryManager().get(Registry.DIMENSION_TYPE_KEY).get(DimensionType.OVERWORLD_ID))
+            return true;
+
+        // Chunks with proper world height have a biome array of length 1536, before it was 1024.
+        var biomesNbt = levelNbt.contains("Biomes", 11) ? levelNbt.getIntArray("Biomes") : null;
+        if (biomesNbt != null && biomesNbt.length == 1536)
+            return true;
+
         int dataVersion = FunnyWorldUpgrader.DATA_VERSION_THREAD_LOCAL.get();
 
-        if (dataVersion > 2692
-                || world.getDimension() != world.getRegistryManager().get(Registry.DIMENSION_TYPE_KEY).get(DimensionType.OVERWORLD_ID))
-            // New Chunk with proper format or non-overworld.
+        // Was generated while there was the datapack for sure
+        // Means the biomes array was null if it got here and this condition is true.
+        if (dataVersion > 2692 && dataVersion <= 2706)
             return true;
 
         // BiomeArray upgrade (warning: this is bad)
         var oldBiomeArray = new BiomeArray(world.getRegistryManager().get(Registry.BIOME_KEY),
                 OldOverworldHeightLimitView.SELF, pos, biomeSource,
-                levelNbt.contains("Biomes", 11) ? levelNbt.getIntArray("Biomes") : null);
+                biomesNbt);
         for (int x = 0; x < 4; x++) {
             for (int z = 0; z < 4; z++) {
                 for (int y = 0; y < 96; y++) {

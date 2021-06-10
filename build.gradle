@@ -1,8 +1,8 @@
 plugins {
-    id 'fabric-loom' version '0.6-SNAPSHOT'
+    id 'org.quiltmc.loom' version '0.8.+'
     id 'java-library'
     id 'maven-publish'
-    id 'org.cadixdev.licenser' version '0.5.0'
+    id 'org.cadixdev.licenser' version '0.6.0'
 }
 
 group = project.maven_group
@@ -10,25 +10,25 @@ version = "${project.mod_version}+${getMCVersionString()}"
 archivesBaseName = project.archives_base_name
 
 // This field defines the Java version your mod target.
-// The Minecraft launcher currently installs Java 8 for users, so your mod probably wants to target Java 8 too.
-def targetJavaVersion = 15
+def targetJavaVersion = 16
 
-def getMCVersionString() {
-    if (project.minecraft_version.matches("\\d\\dw\\d\\d[a-z]")) {
+boolean isMCVersionNonRelease() {
+    return project.minecraft_version.matches('^\\d\\dw\\d\\d[a-z]$')
+            || project.minecraft_version.matches('\\d+\\.\\d+-(pre|rc)(\\d+)')
+}
+
+String getMCVersionString() {
+    if (isMCVersionNonRelease()) {
         return project.minecraft_version
     }
-    int lastDot = project.minecraft_version.lastIndexOf('.')
-    return project.minecraft_version.substring(0, lastDot)
+    def version = project.minecraft_version.split('\\.')
+    return version[0] + '.' + version[1]
 }
 
 repositories {
     maven {
-        name 'AperLambda'
-        url 'https://aperlambda.github.io/maven'
-    }
-    maven {
-        name 'Jitpack'
-        url 'https://jitpack.io'
+        name = 'Fabric'
+        url = 'https://maven.fabricmc.net/'
     }
 }
 
@@ -38,10 +38,12 @@ minecraft {
 dependencies {
     //to change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    mappings "org.quiltmc:yarn:${project.minecraft_version}+build.${project.yarn_mappings}:v2"
+    modImplementation "org.quiltmc:quilt-loader:${project.loader_version}"
 
-    modImplementation("net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}")
+    modImplementation("net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}") {
+        exclude group: 'net.fabricmc'
+    }
 }
 
 java {
@@ -52,23 +54,21 @@ java {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    it.options.encoding = "UTF-8"
+    it.options.encoding = 'UTF-8'
 
-    if (JavaVersion.current().isJava9Compatible()) {
-        it.options.release.set(targetJavaVersion)
-    }
+    it.options.release.set(targetJavaVersion)
 }
 
 processResources {
-    inputs.property "version", project.version
+    inputs.property 'version', project.version
 
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version
     }
 }
 
 jar {
-    from("LICENSE") {
+    from('LICENSE') {
         rename { "${it}_${project.archivesBaseName}" }
     }
 }
